@@ -13,10 +13,9 @@ Unless required by applicable law or agreed to in writing, software distributed 
  * vConsole core class
  */
 
-import 'transitionEnd'
 import pkg from '../../package.json';
-import * as tool from '../lib/tool.js';
-import $ from '../lib/query.js';
+import * as tool from '../lib/tool.ts';
+import $ from '../lib/query.ts';
 
 import './core.less';
 import tpl from './core.html';
@@ -26,13 +25,13 @@ import tplTopBarItem from './topbar_item.html';
 import tplToolItem from './tool_item.html';
 
 // built-in plugins
-import VConsolePlugin from '../lib/plugin.js';
-import VConsoleLogPlugin from '../log/log.js';
-import VConsoleDefaultPlugin from '../log/default.js';
-import VConsoleSystemPlugin from '../log/system.js';
-import VConsoleNetworkPlugin from '../network/network.js';
+import VConsolePlugin from '../lib/plugin.ts';
+import VConsoleLogPlugin from '../log/log.ts';
+import VConsoleDefaultPlugin from '../log/default.ts';
+import VConsoleSystemPlugin from '../log/system.ts';
+import VConsoleNetworkPlugin from '../network/network.ts';
 import VConsoleElementPlugin from '../element/element.js';
-import VConsoleStoragePlugin from '../storage/storage.js';
+import VConsoleStoragePlugin from '../storage/storage.ts';
 
 const VCONSOLE_ID = '#__vconsole';
 
@@ -58,8 +57,9 @@ class VConsole {
     this.pluginList = {};
 
     this.switchPos = {
-      x: 10, // right
-      y: 10, // bottom
+      hasMoved: false, // exclude click event
+      x: 0, // right
+      y: 0, // bottom
       startX: 0,
       startY: 0,
       endX: 0,
@@ -86,7 +86,7 @@ class VConsole {
         return;
       }
       that._render();
-      that._mockTap();
+      // that._mockTap();
       that._bindEvent();
       that._autoRun();
     };
@@ -112,8 +112,8 @@ class VConsole {
   }
 
   /**
-   * add built-in plugins
-   */
+  * add built-in plugins
+  */
   _addBuiltInPlugins() {
     // add default log plugin
     this.addPlugin(new VConsoleDefaultPlugin('default', 'Log'));
@@ -139,43 +139,29 @@ class VConsole {
   }
 
   /**
-   * render panel DOM
-   * @private
-   */
+  * render panel DOM
+  * @private
+  */
   _render() {
     if (! $.one(VCONSOLE_ID)) {
-      let e = document.createElement('div');
+      const e = document.createElement('div');
       e.innerHTML = tpl;
       document.documentElement.insertAdjacentElement('beforeend', e.children[0]);
     }
     this.$dom = $.one(VCONSOLE_ID);
 
     // reposition switch button
-    let $switch = $.one('.vc-switch', this.$dom);
+    const $switch = $.one('.vc-switch', this.$dom);
     let switchX = tool.getStorage('switch_x') * 1,
         switchY = tool.getStorage('switch_y') * 1;
-    if (switchX || switchY) {
-      // check edge
-      if (switchX + $switch.offsetWidth > document.documentElement.offsetWidth) {
-        switchX = document.documentElement.offsetWidth - $switch.offsetWidth;
-      }
-      if (switchY + $switch.offsetHeight > document.documentElement.offsetHeight) {
-        switchY = document.documentElement.offsetHeight - $switch.offsetHeight;
-      }
-      if (switchX < 0) { switchX = 0; }
-      if (switchY < 0) { switchY = 0; }
-      this.switchPos.x = switchX;
-      this.switchPos.y = switchY;
-      $.one('.vc-switch').style.right = switchX + 'px';
-      $.one('.vc-switch').style.bottom = switchY + 'px';
-    }
+    this.setSwitchPosition(switchX, switchY);
 
     // modify font-size
-    let dpr = window.devicePixelRatio || 1;
-    let viewportEl = document.querySelector('[name="viewport"]');
+    const dpr = window.devicePixelRatio || 1;
+    const viewportEl = document.querySelector('[name="viewport"]');
     if (viewportEl && viewportEl.content) {
-      let initialScale = viewportEl.content.match(/initial\-scale\=\d+(\.\d+)?/);
-      let scale = initialScale ? parseFloat(initialScale[0].split('=')[1]) : 1;
+      const initialScale = viewportEl.content.match(/initial\-scale\=\d+(\.\d+)?/);
+      const scale = initialScale ? parseFloat(initialScale[0].split('=')[1]) : 1;
       if (scale < 1) {
         this.$dom.style.fontSize = 13 * dpr + 'px';
       }
@@ -183,12 +169,76 @@ class VConsole {
 
     // remove from less to present transition effect
     $.one('.vc-mask', this.$dom).style.display = 'none';
-  };
+
+    // set theme
+    this._updateTheme();
+  }
 
   /**
-   * simulate tap event by touchstart & touchend
-   * @private
-   */
+  * Update theme
+  * @private 
+  */
+  _updateTheme() {
+    let theme = this.option.theme;
+    if (theme !== 'light' && theme !== 'dark') {
+      theme = ''; // use system theme
+    }
+    this.$dom.setAttribute('data-theme', theme);
+  }
+
+  setSwitchPosition(switchX, switchY) {
+    const $switch = $.one('.vc-switch', this.$dom);
+    [switchX, switchY] = this._getSwitchButtonSafeAreaXY($switch, switchX, switchY);
+    this.switchPos.x = switchX;
+    this.switchPos.y = switchY;
+    $switch.style.right = switchX + 'px';
+    $switch.style.bottom = switchY + 'px';
+    tool.setStorage('switch_x', switchX);
+    tool.setStorage('switch_y', switchY);
+  }
+
+  /**
+  * Get an safe [x, y] position for switch button
+  * @private
+  */
+  _getSwitchButtonSafeAreaXY($switch, x, y) {
+    const docWidth = Math.max(document.documentElement.offsetWidth, window.innerWidth);
+    const docHeight = Math.max(document.documentElement.offsetHeight, window.innerHeight);
+    // check edge
+    if (x + $switch.offsetWidth > docWidth) {
+      x = docWidth - $switch.offsetWidth;
+    }
+    if (y + $switch.offsetHeight > docHeight) {
+      y = docHeight - $switch.offsetHeight;
+    }
+    if (x < 0) { x = 0; }
+    if (y < 20) { y = 20; } // safe area for iOS Home indicator
+    return [x, y];
+  }
+
+  /**
+  * Get an safe [x, y] position for switch button
+  * @private
+  */
+  _getSwitchButtonSafeAreaXY($switch, x, y) {
+    const docWidth = Math.max(document.documentElement.offsetWidth, window.innerWidth);
+    const docHeight = Math.max(document.documentElement.offsetHeight, window.innerHeight);
+    // check edge
+    if (x + $switch.offsetWidth > docWidth) {
+      x = docWidth - $switch.offsetWidth;
+    }
+    if (y + $switch.offsetHeight > docHeight) {
+      y = docHeight - $switch.offsetHeight;
+    }
+    if (x < 0) { x = 0; }
+    if (y < 20) { y = 20; } // safe area for iOS Home indicator
+    return [x, y];
+  }
+
+  /**
+  * simulate tap event by touchstart & touchend
+  * @private
+  */
   _mockTap() {
     let tapTime = 700, // maximun tap interval
         tapBoundary = 10; // max tap move distance
@@ -220,7 +270,8 @@ class VConsole {
       // move and time within limits, manually trigger `click` event
       if (touchHasMoved === false && e.timeStamp - lastTouchStartTime < tapTime && targetElem != null) {
         let tagName = targetElem.tagName.toLowerCase(),
-            needFocus = false;
+            needFocus = false,
+            hasSelection = false;
         switch (tagName) {
           case 'textarea': // focus
             needFocus = true; break;
@@ -239,17 +290,26 @@ class VConsole {
           default:
             break;
         }
+        if (typeof window.getSelection === 'function') {
+          const selection = getSelection();
+          if (selection.rangeCount && selection.type === 'range') { // type: None|Caret|Range
+            hasSelection = true;
+          }
+        }
         if (needFocus) {
           targetElem.focus();
-        } else if (typeof window.getSelection !== 'function' || !getSelection().rangeCount) {
+        } else if (!hasSelection) {
           e.preventDefault(); // prevent click 300ms later
         }
-        let touch = e.changedTouches[0];
-        let event = document.createEvent('MouseEvents');
-        event.initMouseEvent('click', true, true, window, 1, touch.screenX, touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
-        event.forwardedTouchEvent = true;
-        event.initEvent('click', true, true);
-        targetElem.dispatchEvent(event);
+
+        if (!targetElem.disabled && !targetElem.readOnly) {
+          const touch = e.changedTouches[0];
+          const event = document.createEvent('MouseEvents');
+          event.initMouseEvent('click', true, true, window, 1, touch.screenX, touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
+          event.forwardedTouchEvent = true;
+          event.initEvent('click', true, true);
+          targetElem.dispatchEvent(event);
+        }
       }
 
       // reset values
@@ -259,47 +319,43 @@ class VConsole {
     }, false);
   }
   /**
-   * bind DOM events
-   * @private
-   */
+  * bind DOM events
+  * @private
+  */
   _bindEvent() {
-    let that = this;
+    const that = this;
 
     // drag & drop switch button
-    let $switch = $.one('.vc-switch', that.$dom);
+    const $switch = $.one('.vc-switch', that.$dom);
     $.bind($switch, 'touchstart', function(e) {
       that.switchPos.startX = e.touches[0].pageX;
       that.switchPos.startY = e.touches[0].pageY;
+      that.switchPos.hasMoved = false;
     });
     $.bind($switch, 'touchend', function(e) {
-      that.switchPos.x = that.switchPos.endX;
-      that.switchPos.y = that.switchPos.endY;
+      if (!that.switchPos.hasMoved) {
+        return;
+      }
       that.switchPos.startX = 0;
       that.switchPos.startY = 0;
-      tool.setStorage('switch_x', that.switchPos.x);
-      tool.setStorage('switch_y', that.switchPos.y);
+      that.switchPos.hasMoved = false;
+      that.setSwitchPosition(that.switchPos.endX, that.switchPos.endY);
     });
     $.bind($switch, 'touchmove', function(e) {
-      if (e.touches.length > 0) {
-        let offsetX = e.touches[0].pageX - that.switchPos.startX,
-            offsetY = e.touches[0].pageY - that.switchPos.startY;
-        let x = that.switchPos.x - offsetX,
-            y = that.switchPos.y - offsetY;
-        // check edge
-        if (x + $switch.offsetWidth > document.documentElement.offsetWidth) {
-          x = document.documentElement.offsetWidth - $switch.offsetWidth;
-        }
-        if (y + $switch.offsetHeight > document.documentElement.offsetHeight) {
-          y = document.documentElement.offsetHeight - $switch.offsetHeight;
-        }
-        if (x < 0) { x = 0; }
-        if (y < 0) { y = 0; }
-        $switch.style.right = x + 'px';
-        $switch.style.bottom = y + 'px';
-        that.switchPos.endX = x;
-        that.switchPos.endY = y;
-        e.preventDefault();
+      if (e.touches.length <= 0) {
+        return;
       }
+      const offsetX = e.touches[0].pageX - that.switchPos.startX,
+            offsetY = e.touches[0].pageY - that.switchPos.startY;
+      let x = Math.floor(that.switchPos.x - offsetX),
+          y = Math.floor(that.switchPos.y - offsetY);
+      [x, y] = that._getSwitchButtonSafeAreaXY($switch, x, y);
+      $switch.style.right = x + 'px';
+      $switch.style.bottom = y + 'px';
+      that.switchPos.endX = x;
+      that.switchPos.endY = y;
+      that.switchPos.hasMoved = true;
+      e.preventDefault();
     });
 
     // show console panel
@@ -313,19 +369,7 @@ class VConsole {
     });
 
     // hide console panel when tap background mask
-    let $mask = $.one('.vc-mask', this.$dom);
-    let $panel = $.one('.vc-panel', this.$dom);
-    const transitionEnd = window.transitionEnd($mask).whichTransitionEnd()
-    const onMaskTransitionEnd = function() {
-      $mask.style.display = 'none';
-      $panel.style.display = 'none';
-    };
-    if (transitionEnd) {
-      $.bind($mask, transitionEnd, onMaskTransitionEnd);
-    } else {
-      onMaskTransitionEnd();
-    }
-    $.bind($mask, 'click', function(e) {
+    $.bind($.one('.vc-mask', that.$dom), 'click', function(e) {
       if (e.target != $.one('.vc-mask')) {
         return false;
       }
@@ -340,23 +384,6 @@ class VConsole {
       }
       that.showTab(tabName);
     });
-
-    // after console panel, trigger a transitionend event to make panel's property 'display' change from 'block' to 'none'
-    const onPanelTransitionEnd = function(target) {
-      if (!$.hasClass(that.$dom, 'vc-toggle')) {
-        target.style.display = 'none';
-      }
-    }
-    if (transitionEnd) {
-      $.bind($panel, transitionEnd, function(e) {
-        if (e.target != $panel) {
-          return false;
-        }
-        onPanelTransitionEnd(e.target);
-      });
-    } else {
-      onPanelTransitionEnd($panel);
-    }
 
     // disable background scrolling
     let $content = $.one('.vc-content', that.$dom);
@@ -401,9 +428,9 @@ class VConsole {
   };
 
   /**
-   * auto run after initialization
-   * @private
-   */
+  * auto run after initialization
+  * @private
+  */
   _autoRun() {
     this.isInited = true;
 
@@ -421,9 +448,9 @@ class VConsole {
   }
 
   /**
-   * trigger a vConsole.option event
-   * @protect
-   */
+  * trigger a vConsole.option event
+  * @protect
+  */
   triggerEvent(eventName, param) {
     eventName = 'on' + eventName.charAt(0).toUpperCase() + eventName.slice(1);
     if (tool.isFunction(this.option[eventName])) {
@@ -432,9 +459,9 @@ class VConsole {
   }
 
   /**
-   * init a plugin
-   * @private
-   */
+  * init a plugin
+  * @private
+  */
   _initPlugin(plugin) {
     let that = this;
     plugin.vConsole = this;
@@ -521,9 +548,9 @@ class VConsole {
   }
 
   /**
-   * trigger an event for each plugin
-   * @private
-   */
+  * trigger an event for each plugin
+  * @private
+  */
   _triggerPluginsEvent(eventName) {
     for (let id in this.pluginList) {
       if (this.pluginList[id].isReady) {
@@ -533,9 +560,9 @@ class VConsole {
   }
 
   /**
-   * trigger an event by plugin's name
-   * @private
-   */
+  * trigger an event by plugin's name
+  * @private
+  */
   _triggerPluginEvent(pluginName, eventName) {
     let plugin = this.pluginList[pluginName];
     if (!!plugin && plugin.isReady) {
@@ -544,11 +571,11 @@ class VConsole {
   }
 
   /**
-   * add a new plugin
-   * @public
-   * @param object VConsolePlugin object
-   * @return boolean
-   */
+  * add a new plugin
+  * @public
+  * @param object VConsolePlugin object
+  * @return boolean
+  */
   addPlugin(plugin) {
     // ignore this plugin if it has already been installed
     if (this.pluginList[plugin.id] !== undefined) {
@@ -568,11 +595,11 @@ class VConsole {
   }
 
   /**
-   * remove a plugin
-   * @public
-   * @param string pluginID
-   * @return boolean
-   */
+  * remove a plugin
+  * @public
+  * @param string pluginID
+  * @return boolean
+  */
   removePlugin(pluginID) {
     pluginID = (pluginID + '').toLowerCase();
     let plugin = this.pluginList[pluginID];
@@ -622,9 +649,9 @@ class VConsole {
   }
 
   /**
-   * show console panel
-   * @public
-   */
+  * show console panel
+  * @public
+  */
   show() {
     if (!this.isInited) {
       return;
@@ -645,21 +672,26 @@ class VConsole {
   }
 
   /**
-   * hide console panel
-   * @public
-   */
+  * hide console panel
+  * @public
+  */
   hide() {
     if (!this.isInited) {
       return;
     }
     $.removeClass(this.$dom, 'vc-toggle');
+    setTimeout(() => {
+      // panel will be hidden by CSS transition in 0.3s
+      $.one('.vc-mask', this.$dom).style.display = 'none';
+      $.one('.vc-panel', this.$dom).style.display = 'none';
+    }, 330);
     this._triggerPluginsEvent('hideConsole');
   }
 
   /**
-   * show switch button
-   * @public
-   */
+  * show switch button
+  * @public
+  */
   showSwitch() {
     if (!this.isInited) {
       return;
@@ -669,8 +701,8 @@ class VConsole {
   }
 
   /**
-   * hide switch button
-   */
+  * hide switch button
+  */
   hideSwitch() {
     if (!this.isInited) {
       return;
@@ -680,9 +712,9 @@ class VConsole {
   }
 
   /**
-   * show a tab
-   * @public
-   */
+  * show a tab
+  * @public
+  */
   showTab(tabID) {
     if (!this.isInited) {
       return;
@@ -712,27 +744,29 @@ class VConsole {
   }
 
   /**
-   * update option(s)
-   * @public
-   */
+  * update option(s)
+  * @public
+  */
   setOption(keyOrObj, value) {
     if (tool.isString(keyOrObj)) {
       this.option[keyOrObj] = value;
       this._triggerPluginsEvent('updateOption');
+      this._updateTheme();
     } else if (tool.isObject(keyOrObj)) {
       for (let k in keyOrObj) {
         this.option[k] = keyOrObj[k];
       }
       this._triggerPluginsEvent('updateOption');
+      this._updateTheme();
     } else {
       console.debug('The first parameter of vConsole.setOption() must be a string or an object.');
     }
   }
 
   /**
-   * uninstall vConsole
-   * @public
-   */
+  * uninstall vConsole
+  * @public
+  */
   destroy() {
     if (!this.isInited) {
       return;

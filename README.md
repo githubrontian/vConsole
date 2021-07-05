@@ -2,7 +2,7 @@ English | [简体中文](./README_CN.md)
 
 vConsole
 ==============================
-[![npm version](https://badge.fury.io/js/vconsole.svg)](https://badge.fury.io/js/vconsole) 
+[![npm version](https://badge.fury.io/js/vconsole.svg)](https://badge.fury.io/js/vconsole)
 
 A lightweight, extendable front-end developer tool for mobile web page.
 
@@ -19,32 +19,37 @@ A lightweight, extendable front-end developer tool for mobile web page.
 
 ## Usage
 
-Download the [latest release](https://github.com/Tencent/vConsole/releases/latest). (DO NOT copy `dist/vconsole.min.js` in the dev branch)
+Method 1: Using npm (Recommanded)
 
-Or, install via npm:
-
-```
-npm install vconsole
+```bash
+$ npm install vconsole
 ```
 
-Import `dist/vconsole.min.js` to your project:
+```javascript
+import VConsole from 'vconsole';
+
+const vConsole = new VConsole();
+// or init with options
+const vConsole = new VConsole({ maxLogNumber: 1000 });
+
+// call `console` methods as usual
+console.log('Hello world');
+
+// remove it when you finish debugging
+vConsole.destroy();
+```
+
+Method 2: Using unpkg CDN in HTML:
 
 ```html
-<script src="path/to/vconsole.min.js"></script>
+<script src="https://unpkg.com/vconsole/dist/vconsole.min.js"></script>
 <script>
-  // init vConsole
-  var vConsole = new VConsole();
-  console.log('Hello world');
+  // VConsole will be exported to `window.VConsole` by default.
+  var vConsole = new window.VConsole();
 </script>
 ```
 
-For TypeScript users:
-
-```javascript
-import 'path/to/vconsole.min.d.ts';
-```
-
-See [Tutorial](./doc/tutorial.md) for more details.
+See [Tutorial](./doc/tutorial.md) for more usage details.
 
 
 ## Preview
@@ -53,7 +58,7 @@ See [Tutorial](./doc/tutorial.md) for more details.
 
 [http://wechatfe.github.io/vconsole/demo.html](http://wechatfe.github.io/vconsole/demo.html)
 
-![](./example/snapshot/log_panel.png)
+![](./example/snapshot/panel_log.jpg) ![](./example/snapshot/panel_network.jpg) ![](./example/snapshot/panel_element.jpg) ![](./example/snapshot/panel_storage.jpg)
 
 
 ## Documentation
@@ -71,11 +76,13 @@ Plugin:
  - [Plugin: Event List](./doc/plugin_event_list.md)
 
 
-## Plugins
+## Third-party Plugins
 
  - [vConsole-sources](https://github.com/WechatFE/vConsole-sources)
  - [vconsole-webpack-plugin](https://github.com/diamont1001/vconsole-webpack-plugin)
- 
+ - [vconsole-stats-plugin](https://github.com/smackgg/vConsole-Stats)
+ - [vconsole-vue-devtools-plugin](https://github.com/Zippowxk/vue-vconsole-devtools)
+ - [vconsole-outputlog-plugin](https://github.com/sunlanda/vconsole-outputlog-plugin)
 
 ## Changelog
 

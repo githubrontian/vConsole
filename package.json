@@ -1,13 +1,14 @@
 {
   "name": "vconsole",
-  "version": "3.3.4",
+  "version": "3.8.1",
   "description": "A lightweight, extendable front-end developer tool for mobile web page.",
   "homepage": "https://github.com/Tencent/vConsole",
   "main": "dist/vconsole.min.js",
   "typings": "dist/vconsole.min.d.ts",
   "scripts": {
-    "test": "mocha",
-    "build": "webpack"
+    "build": "webpack --mode=production",
+    "dev": "webpack --mode=development",
+    "serve": "webpack serve --config webpack.serve.config"
   },
   "keywords": [
     "console",
@@ -19,29 +20,32 @@
     "url": "git+https://github.com/Tencent/vConsole.git"
   },
   "dependencies": {
-    "mutation-observer": "^1.0.3",
-    "transitionEnd": "^1.0.2"
+    "copy-text-to-clipboard": "^3.0.1",
+    "core-js": "^3.11.0",
+    "mutation-observer": "^1.0.3"
   },
   "devDependencies": {
-    "@babel/core": "^7.6.2",
-    "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/plugin-proposal-export-namespace-from": "^7.5.2",
-    "@babel/plugin-proposal-object-rest-spread": "^7.6.2",
-    "@babel/preset-env": "^7.6.2",
-    "babel-loader": "^8.0.6",
-    "babel-plugin-add-module-exports": "^1.0.2",
-    "chai": "^4.2.0",
-    "copy-webpack-plugin": "^5.0.4",
-    "css-loader": "^3.2.0",
-    "html-loader": "^0.5.5",
-    "jsdom": "^15.1.1",
+    "@babel/core": "^7.14.0",
+    "@babel/plugin-proposal-class-properties": "^7.13.0",
+    "@babel/plugin-proposal-export-namespace-from": "^7.12.13",
+    "@babel/plugin-proposal-object-rest-spread": "^7.13.8",
+    "@babel/preset-env": "^7.14.1",
+    "@babel/preset-typescript": "^7.13.0",
+    "babel-loader": "^8.2.2",
+    "babel-plugin-add-module-exports": "^1.0.4",
+    "chai": "^4.3.4",
+    "copy-webpack-plugin": "^8.1.1",
+    "css-loader": "^5.2.4",
+    "html-loader": "^2.1.2",
+    "jsdom": "^16.5.3",
     "json-loader": "^0.5.7",
-    "less": "^3.10.3",
-    "less-loader": "^5.0.0",
-    "mocha": "^5.2.0",
-    "style-loader": "^1.0.0",
-    "webpack": "^4.41.0",
-    "webpack-cli": "^3.3.9"
+    "less": "^4.1.1",
+    "less-loader": "^8.1.1",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.37.0",
+    "webpack-cli": "^4.7.0",
+    "webpack-dev-server": "^3.11.2",
+    "webpack-merge": "^5.7.3"
   },
   "author": "Tencent",
   "license": "MIT"
